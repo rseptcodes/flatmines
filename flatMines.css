@@ -223,3 +223,94 @@ h1 {
     border: 0.5px solid var(--red-color);
     color: var(--red-color);
 }
+@keyframes explode {
+    0% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+
+    20% {
+        transform: scale(1.35);
+        filter: brightness(2.8);
+    }
+
+    45% {
+        transform: scale(0.8) rotate(-10deg);
+        filter: brightness(1.8);
+    }
+
+    70% {
+        transform: scale(1.15) rotate(6deg);
+    }
+
+    100% {
+        transform: scale(1);
+        filter: brightness(1);
+    }
+}
+
+.tiles--explode {
+    animation: explode .45s cubic-bezier(.22,1,.36,1);
+    z-index: 2;
+}
+@keyframes flagPop {
+    0% {
+        transform: scale(0.6) rotate(-12deg);
+    }
+
+    50% {
+        transform: scale(1.2) rotate(6deg);
+    }
+
+    75% {
+        transform: scale(0.92) rotate(-3deg);
+    }
+
+    100% {
+        transform: scale(1) rotate(0);
+    }
+}
+
+.tiles--flagPop {
+    animation: flagPop .32s cubic-bezier(.34,1.56,.64,1);
+}
+
+.resetBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    
+    margin: 28px auto 0;
+    width: fit-content;
+    min-width: 140px;
+    
+    padding: 12px 24px;
+    background: color-mix(in srgb, var(--sc-color) 70%, transparent);
+    backdrop-filter: blur(20px);
+    border: 0.5px solid var(--border);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    
+    color: var(--txt-color);
+    font-size: 0.95rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.resetBtn:hover {
+    background-color: var(--sc-color-hover);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15), 0 0 12px var(--glow-color);
+    border-color: var(--accent-hover);
+}
+
+.resetBtn:active {
+    transform: scale(0.95) translateY(0);
+    box-shadow: var(--shadow-sm);
+}
