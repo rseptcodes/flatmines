@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jogo da Velha</title>
+    <title>Flatmines!</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
 
@@ -15,14 +15,17 @@
 </head>
 <body>
 <div class="container">
-    <h1>Campo Minado</h1>
-    <p class="subtitle">Boa sorte.</p>
+    <h1>flatMines</h1>
+    <p class="subtitle">Good luck.</p>
 
-    <div class="placar">
-        <div class="placar-item">Tempo: <span id="score-time">0</span>s</div>
-    </div>
+<div class="placar">
+    <div class="placar-item">Time: <span id="score-time">0</span>s</div>
+    <div class="placar-item">Flags: <span id="score-flags">0</span></div>
+    <div class="placar-item">Streak: <span id="score-streak">0</span></div>
+</div>
 
     <div id="board" class="board"></div>
+    <button id="resetBtn" class="resetBtn">RESET</button>
 </div>
 </body>
 </html>
