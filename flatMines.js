@@ -1,4 +1,5 @@
 const mainConfig = {
+	gameEnded: false,
 	init(){
 		eventBus.subscribe("init", () => {
 			boardState.createBoard(12);
@@ -8,10 +9,21 @@ const mainConfig = {
 			flagCountManager.resetCount();
 			streakManager.init();
 		});
+		eventBus.subscribe("timerInit", () => {
+			ui.toggleAnimate(ui.time, "placar--timer", true);
+		});
+		eventBus.subscribe("timerStopped", () => {
+			ui.toggleAnimate(ui.time, "placar--timer", false);
+		});
+		eventBus.subscribe("hideNumbers", () => {
+			ui.toggleNumbersVisibility();
+		});
 		eventBus.subscribe("tileMarked", () => {
 		    flagCountManager.useFlag();
+		    helperFunctions.applyTempClass(ui.flags, "placar--marked");
 		});
 		eventBus.subscribe("reset", () => {
+			this.gameEnded = false;
 			boardState.resetBoard(12);
       tilesManager.resetTiles(boardState.board);
       timeManager.reset();
@@ -22,14 +34,18 @@ const mainConfig = {
 		    flagCountManager.returnFlag();
 		});
 		eventBus.subscribe("playerWin", () => {
+			this.gameEnded = true;
 			streakManager.addStreak();
+			tilesManager.revealAllBombs();
+			timeManager.stop();
 		});
 		eventBus.subscribe("gameOver", () => {
+			this.gameEnded = true;
 			tilesManager.revealAllBombs();
 			timeManager.stop();
 			streakManager.resetStreak();
 		});
-		ui.setResetListener();
+		ui.initListeners();
     eventBus.update("init");
 	}
 };
@@ -63,15 +79,23 @@ const boardState = {
 		let bombsCount = Math.floor(this.totalTiles * 0.20);
 		
 		while (bombsPlaced < bombsCount) {
-	  const randomIndex = Math.floor(Math.random() * this.totalTiles);
+    const randomIndex = Math.floor(Math.random() * this.totalTiles);
+    
+    if (this.board[randomIndex] === 0) {
+        this.board[randomIndex] = -1;
+        const adjacentTiles = this.getAdjacentTiles(this.board, randomIndex);
+        this.addBombNumbers(this.board, adjacentTiles);
+        bombsPlaced++;
+    } 
 
-	  if (this.board[randomIndex] === 0) {
-    this.board[randomIndex] = -1;
-    const adjacentTiles = this.getAdjacentTiles(this.board, randomIndex);
-    this.addBombNumbers(this.board, adjacentTiles);
-    bombsPlaced++;
-   }
+    else if (this.board[randomIndex] !== -1 && !this.hasValue(0)) {
+        this.board[randomIndex] = -1;
+        const adjacentTiles = this.getAdjacentTiles(this.board, randomIndex);
+        this.addBombNumbers(this.board, adjacentTiles);
+        bombsPlaced++;
+    }
 }
+
 		},
 	resetBoard(number){
 		this.board = [];
@@ -113,11 +137,17 @@ const boardState = {
     		board[index]++;
     	}
     },
+    hasValue(value) {
+    return this.board.includes(value);
+}
+
 };
 const tilesManager = {
 	tilesArray: [],
 	createTiles(array, local, number, index){
 		const tile = helperFunctions.createElement("button",local, "tiles");
+    tile.dataset.value = (number >= 5) ? "high" : number;
+    
 		const isBomb = number < 0;
 	  helperFunctions.createIcon(tile, "fa-flag");
 		
@@ -132,9 +162,11 @@ const tilesManager = {
 	  this.initTiles(board);
 	},
 	revealTile(array, index){
-    if (array[index].isRevealed) return;
+		if(mainConfig.gameEnded) return;
+    if (array[index].isRevealed || array[index].isMarked) return;
 
     array[index].isRevealed = true;
+    
     this.renderTile(array, index);
 
     if (boardState.board[index] === 0){
@@ -146,15 +178,16 @@ const tilesManager = {
     } else if (boardState.board[index] < 0){
     	eventBus.update("gameOver");
     }
+    this.verifyEmptySpaces(array);
 },
-renderTile(array, index){
+  renderTile(array, index){
     const tile = array[index];
 
     tile.element.innerHTML = "";
-
     tile.element.classList.toggle("tiles--open", tile.isRevealed);
     tile.element.classList.toggle("tiles--hasFlag", tile.isMarked);
     tile.element.classList.toggle("tiles--bomb", tile.isBomb && tile.isRevealed);
+    
 
     if (!tile.isRevealed) {
         if (tile.isMarked) {
@@ -172,7 +205,7 @@ renderTile(array, index){
         tile.element.innerText = tile.number;
     }
 },
-async toggleMarkedTile(array, index){
+  async toggleMarkedTile(array, index){
     if (array[index].isRevealed) return;
 
     array[index].isMarked = !array[index].isMarked;
@@ -184,7 +217,7 @@ async toggleMarkedTile(array, index){
     this.renderTile(array, index);
     await helperFunctions.applyTempClass(array[index].element, "tiles--flagPop");
 },
-revealAllBombs() {
+  revealAllBombs() {
     this.tilesArray.forEach(async tile => {
         if (!tile.isBomb) return;
 
@@ -193,6 +226,12 @@ revealAllBombs() {
         tile.isRevealed = true;
         this.renderTile(this.tilesArray, tile.index);
     });
+},
+  verifyEmptySpaces(array) {
+  if (!array.some(item => !item.isRevealed && !item.isBomb)) {
+    eventBus.update("playerWin");
+  }
+  return;
 },
 	initTiles(board){
 		const boardElement = document.getElementById("board");
@@ -212,6 +251,8 @@ const ui = {
     flags: document.getElementById("score-flags"),
     streak: document.getElementById("score-streak"),
     resetBtn: document.getElementById("resetBtn"),
+    tilesConfigBtn: document.getElementById("tilesDesignBtn"),
+    board: document.getElementById("board"),
 
     setTime(value) {
         this.time.textContent = value;
@@ -224,10 +265,24 @@ const ui = {
     setStreak(value) {
         this.streak.textContent = value;
     },
-    setResetListener(){
-    	this.resetBtn.addEventListener("click", () => {
-    		eventBus.update("reset");
+    initListeners(){
+    this.setListener(this.resetBtn, "reset")
+    this.setListener(this.tilesConfigBtn, "hideNumbers")
+    },
+    setListener(element, update){
+    element.addEventListener("click", () => {
+    		eventBus.update(update);
     	})
+    },
+    toggleAnimate(element, className, isAnimating) {
+    if(isAnimating){
+    	element.classList.add(className);
+    } else {
+    	element.classList.remove(className);
+    }
+},
+    toggleNumbersVisibility(){
+    	this.board.classList.toggle("board--withoutNumbers");
     }
 };
 const flagCountManager = {
@@ -282,7 +337,9 @@ const timeManager = {
     start() {
         if (this.running) return;
 
+        eventBus.update("timerInit");
         this.running = true;
+        
         this.startTime = performance.now();
 
         const update = () => {
@@ -299,6 +356,7 @@ const timeManager = {
 
     stop() {
         this.running = false;
+        eventBus.update("timerStopped");
         cancelAnimationFrame(this.animationId);
     },
 
