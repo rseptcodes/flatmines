@@ -4,6 +4,7 @@ const mainConfig = {
 		eventBus.subscribe("init", () => {
 			boardState.createBoard(12);
       tilesManager.initTiles(boardState.board);
+      decisionEngine.init(boardState.board);
 			timeManager.reset();
 			timeManager.start();
 			flagCountManager.resetCount();
@@ -15,8 +16,16 @@ const mainConfig = {
 		eventBus.subscribe("timerStopped", () => {
 			ui.toggleAnimate(ui.time, "placar--timer", false);
 		});
+		eventBus.subscribe("newStreak", () => {
+			helperFunctions.applyTempClass(ui.streak, "placar--streak");
+		});
+		
 		eventBus.subscribe("hideNumbers", () => {
 			ui.toggleNumbersVisibility();
+		});
+		eventBus.subscribe("aiMove", () => {
+			let move = decisionEngine.makeDecision(decisionEngine.knownTiles, tilesManager.tilesArray);
+			tilesManager.revealTile(tilesManager.tilesArray, move);
 		});
 		eventBus.subscribe("tileMarked", () => {
 		    flagCountManager.useFlag();
@@ -83,14 +92,14 @@ const boardState = {
     
     if (this.board[randomIndex] === 0) {
         this.board[randomIndex] = -1;
-        const adjacentTiles = this.getAdjacentTiles(this.board, randomIndex);
+        const adjacentTiles = helperFunctions.getAdjacentTiles(this.board, randomIndex, this.size);
         this.addBombNumbers(this.board, adjacentTiles);
         bombsPlaced++;
     } 
 
     else if (this.board[randomIndex] !== -1 && !this.hasValue(0)) {
         this.board[randomIndex] = -1;
-        const adjacentTiles = this.getAdjacentTiles(this.board, randomIndex);
+        const adjacentTiles = helperFunctions.getAdjacentTiles(this.board, randomIndex, this.size);
         this.addBombNumbers(this.board, adjacentTiles);
         bombsPlaced++;
     }
@@ -101,36 +110,6 @@ const boardState = {
 		this.board = [];
 		this.createBoard(number);
 	},
-	  getAdjacentTiles(board, center) {
-    const row = Math.floor(center / this.size);
-    const col = center % this.size;
-    let adjacentTiles = [];
-
-    for (let rowOffset = -1; rowOffset <= 1; rowOffset++) {
-        for (let colOffset = -1; colOffset <= 1; colOffset++) {
-            const newRow = row + rowOffset;
-            const newCol = col + colOffset;
-            if (
-                newRow < 0 ||
-                newRow >= this.size ||
-                newCol < 0 ||
-                newCol >= this.size
-            ) {
-                continue;
-            }
-
-            const index = newRow * this.size + newCol;
-
-            if (board[index] === -1) continue;
-
-            adjacentTiles.push({
-            index,
-            value: board[index],
-}); // talvez eu precise do value
-        }
-    }
-    return adjacentTiles;
-},
     addBombNumbers(board, tiles){
     	for(let i = 0; i < tiles.length; i++){
     		const index = tiles[i].index;
@@ -142,6 +121,72 @@ const boardState = {
 }
 
 };
+
+const decisionEngine = {
+  knownTiles: [],
+  size: 0,
+  init(board) {
+    this.knownTiles = board.map(() => ({
+        value: 9,
+        risk: 0
+    }));
+    this.size = Math.sqrt(this.knownTiles.length);
+},
+  scoreAdjacentTiles(knownBoard, center, size) {
+  	const adjacentTiles = helperFunctions.getAdjacentTiles(knownBoard, center, size);
+  	
+  	let unknownCount = 0;
+  	for(let i = 0; i < adjacentTiles.length; i++){
+  		const index = adjacentTiles[i].index;
+  		if(knownBoard[index].value === 9) {
+  			unknownCount++;
+  		}
+  	}
+  	if (unknownCount === 0) return;
+
+  	const riskToAdd = knownBoard[center].value / unknownCount;
+
+  	for(let i = 0; i < adjacentTiles.length; i++){
+  		const index = adjacentTiles[i].index;
+  		if(knownBoard[index].value === 9) {
+  			knownBoard[index].risk += riskToAdd;
+  		}
+  	}
+  },
+
+  evaluateBoard(knownBoard) {
+    for (let i = 0; i < knownBoard.length; i++) {
+    	if(knownBoard[i].value === 9) continue;
+        this.scoreAdjacentTiles(knownBoard, i, this.size);
+    }
+    let betterPosition = -1;
+
+    for (let i = 0; i < knownBoard.length; i++) {
+    if (knownBoard[i].value !== 9) continue;
+    if (betterPosition === -1 || knownBoard[i].risk < knownBoard[betterPosition].risk) {
+        betterPosition = i;
+    }
+}
+    return betterPosition;
+},
+    makeDecision(knownBoard, realArray) {
+  	for (let i = 0; i < knownBoard.length; i++) {
+  		const realTile = realArray[i];
+  		knownBoard[i].value = realTile.isRevealed ? realTile.number : 9;
+  	}
+
+  	this.resetRisk(knownBoard);
+  	const betterDecision = this.evaluateBoard(knownBoard);
+  	console.log("Melhor jogada calculada:", betterDecision);
+  	return betterDecision;
+  },
+  resetRisk(knownBoard){
+  	for(let i = 0; i < knownBoard.length; i++){
+  		knownBoard[i].risk = 0;
+  	}
+  }
+};
+
 const tilesManager = {
 	tilesArray: [],
 	createTiles(array, local, number, index){
@@ -170,7 +215,7 @@ const tilesManager = {
     this.renderTile(array, index);
 
     if (boardState.board[index] === 0){
-        const adjacentTiles = boardState.getAdjacentTiles(boardState.board, index);
+        const adjacentTiles = helperFunctions.getAdjacentTiles(boardState.board, index, this.size);
 
         for(let i = 0; i < adjacentTiles.length; i++){
             this.revealTile(array, adjacentTiles[i].index);
@@ -252,6 +297,7 @@ const ui = {
     streak: document.getElementById("score-streak"),
     resetBtn: document.getElementById("resetBtn"),
     tilesConfigBtn: document.getElementById("tilesDesignBtn"),
+    
     board: document.getElementById("board"),
 
     setTime(value) {
@@ -285,6 +331,9 @@ const ui = {
     	this.board.classList.toggle("board--withoutNumbers");
     }
 };
+const configMenu = {
+	
+}
 const flagCountManager = {
     maxFlags: 20,
     flagsCount: 20,
@@ -321,6 +370,7 @@ const streakManager = {
         this.streak++;
         localStorage.setItem("streak", this.streak);
         ui.setStreak(this.streak);
+        eventBus.update("newStreak");
     },
 
     resetStreak() {
@@ -346,7 +396,8 @@ const timeManager = {
             if (!this.running) return;
 
             const seconds = Math.floor((performance.now() - this.startTime) / 1000);
-            ui.setTime(seconds);
+            const timeDisplay = helperFunctions.formatTime(seconds)
+            ui.setTime(timeDisplay);
 
             this.animationId = requestAnimationFrame(update);
         };
@@ -388,6 +439,49 @@ createIcon(local, FAName){
 		const icon = this.createElement("i", local, FAName);
 		icon.classList.add("fa");
 		return icon;
+},
+createTestButton(callback){
+	const button = this.createButton(document.body, "testButton", "fa-hammer");
+	if(callback) button.addEventListener("click", () => {
+		callback();
+	})
+},
+getAdjacentTiles(board, center, size) {
+    const row = Math.floor(center / size);
+    const col = center % size;
+    const adjacentTiles = [];
+
+    for (let rowOffset = -1; rowOffset <= 1; rowOffset++) {
+        for (let colOffset = -1; colOffset <= 1; colOffset++) {
+            const newRow = row + rowOffset;
+            const newCol = col + colOffset;
+
+            if (
+                newRow < 0 ||
+                newRow >= size ||
+                newCol < 0 ||
+                newCol >= size
+            ) {
+                continue;
+            }
+
+            const index = newRow * size + newCol;
+            const tile = board[index];
+
+            const value = typeof tile === "object"
+                ? tile.value
+                : tile;
+
+            if (value === -1) continue;
+
+            adjacentTiles.push({
+                index,
+                value
+            });
+        }
+    }
+
+    return adjacentTiles;
 },
 applyTempClass(element, className, callback){
 	if(!element) return;
@@ -433,9 +527,26 @@ setupMobileInput(element, callback, longCallback) {
     element.addEventListener("touchcancel", () => {
         clearTimeout(pressTimeout);
     });
-}
+},
+formatTime(totalSeconds) {
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+
+  const m = String(minutes).padStart(2, '0');
+  const s = String(seconds).padStart(2, '0');
+
+  if (hours > 0) {
+    const h = String(hours).padStart(2, '0');
+    return `${h}:${m}:${s}`;
+  }
+
+  return `${m}:${s}`;
+},
 
 
 };
 mainConfig.init();
-//bro
+helperFunctions.createTestButton(() => {
+	eventBus.update("aiMove");
+});
