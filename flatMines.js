@@ -27,6 +27,10 @@ const mainConfig = {
 			let move = decisionEngine.makeDecision(decisionEngine.knownTiles, tilesManager.tilesArray);
 			tilesManager.revealTile(tilesManager.tilesArray, move);
 		});
+		eventBus.subscribe("aiMarked", () => {
+			let tileMarked = decisionEngine.makeDecision(decisionEngine.knownTiles, tilesManager.tilesArray);
+			tilesManager.markTile(tilesManager.tilesArray, tileMarked);
+		});
 		eventBus.subscribe("tileMarked", () => {
 		    flagCountManager.useFlag();
 		    helperFunctions.applyTempClass(ui.flags, "placar--marked");
@@ -85,7 +89,7 @@ const boardState = {
 		this.board = Array(this.totalTiles).fill(0);
 		
 		let bombsPlaced = 0;
-		let bombsCount = Math.floor(this.totalTiles * 0.20);
+		let bombsCount = Math.floor(this.totalTiles * 0.10);
 		
 		while (bombsPlaced < bombsCount) {
     const randomIndex = Math.floor(Math.random() * this.totalTiles);
@@ -127,8 +131,10 @@ const decisionEngine = {
   size: 0,
   init(board) {
     this.knownTiles = board.map(() => ({
-        value: 9,
-        risk: 0
+        value: 999,
+        risk: 1,
+        isSafe: false,
+        isBomb: false
     }));
     this.size = Math.sqrt(this.knownTiles.length);
 },
@@ -149,42 +155,117 @@ const decisionEngine = {
   	for(let i = 0; i < adjacentTiles.length; i++){
   		const index = adjacentTiles[i].index;
   		if(knownBoard[index].value === 9) {
-  			knownBoard[index].risk += riskToAdd;
+  			knownBoard[index].risk -= riskToAdd;
+  			
   		}
   	}
   },
+  analyzeSubsetRule(knownBoard, size, centerTile, adjacentTile) {
+    const centerNeighbors = helperFunctions.getAdjacentTiles(knownBoard, centerTile, size);
+    const adjacentNeighbors = helperFunctions.getAdjacentTiles(knownBoard, adjacentTile, size);
 
-  evaluateBoard(knownBoard) {
-    for (let i = 0; i < knownBoard.length; i++) {
-    	if(knownBoard[i].value === 9) continue;
-        this.scoreAdjacentTiles(knownBoard, i, this.size);
-    }
-    let betterPosition = -1;
+    const centerBombs = centerNeighbors.filter(
+        tile => knownBoard[tile.index].isBomb
+    ).length;
 
-    for (let i = 0; i < knownBoard.length; i++) {
-    if (knownBoard[i].value !== 9) continue;
-    if (betterPosition === -1 || knownBoard[i].risk < knownBoard[betterPosition].risk) {
-        betterPosition = i;
+    const adjacentBombs = adjacentNeighbors.filter(
+        tile => knownBoard[tile.index].isBomb
+    ).length;
+
+    const centerUnknown = centerNeighbors.filter(
+        tile => knownBoard[tile.index].value === 9 && !knownBoard[tile.index].isBomb
+    );
+
+    const adjacentUnknown = adjacentNeighbors.filter(
+        tile => knownBoard[tile.index].value === 9 && !knownBoard[tile.index].isBomb
+    );
+
+    const centerIsSubset = centerUnknown.every(center =>
+        adjacentUnknown.some(adj => adj.index === center.index)
+    );
+
+    if (!centerIsSubset || centerUnknown.length === 0) return;
+
+    const exclusive = adjacentUnknown.filter(
+        adj => !centerUnknown.some(center => center.index === adj.index)
+    );
+
+    const centerValue = knownBoard[centerTile].value - centerBombs;
+    const adjacentValue = knownBoard[adjacentTile].value - adjacentBombs;
+    const valueDifference = adjacentValue - centerValue;
+    
+    if (
+        valueDifference > 0 &&
+        valueDifference === exclusive.length
+    ) {
+        for (const tile of exclusive) {
+            knownBoard[tile.index].risk = Infinity;
+            knownBoard[tile.index].isBomb = true;
+        }
     }
-}
-    return betterPosition;
+
+    if (valueDifference === 0) {
+        for (const tile of exclusive) {
+            knownBoard[tile.index].risk = 0;
+            knownBoard[tile.index].isSafe = true;
+        }
+    }
 },
-    makeDecision(knownBoard, realArray) {
+  evaluateBoard(knownBoard) {  
+    for (let centerI = 0; centerI < knownBoard.length; centerI++) {  
+        if (knownBoard[centerI].value === 9) continue;  
+
+        this.scoreAdjacentTiles(knownBoard, centerI, this.size);  
+
+        for (const adjacent of helperFunctions.getAdjacentTiles(knownBoard, centerI, this.size)) {  
+            this.analyzeSubsetRule( knownBoard,                this.size,centerI,adjacent.index
+            );
+        }
+    }  
+
+    let betterPosition = -1;
+      
+    for (let i = 0; i < knownBoard.length; i++) {  
+        if (knownBoard[i].value !== 9) continue;  
+
+        if (betterPosition === -1 ||knownBoard[i].risk < knownBoard[betterPosition].risk
+        ) {
+            betterPosition = i;  
+        }
+        if (knownBoard[i].isSafe) {  
+            return i;  
+        }
+    }  
+
+    return betterPosition;  
+},
+updateBombs(knownBoard, realBoard) {
+    for (let i = 0; i < knownBoard.length; i++) {
+        if (!knownBoard[i].isBomb) continue;
+
+        tilesManager.markTile(realBoard, i);
+    }
+},
+  makeDecision(knownBoard, realArray) {
   	for (let i = 0; i < knownBoard.length; i++) {
   		const realTile = realArray[i];
   		knownBoard[i].value = realTile.isRevealed ? realTile.number : 9;
   	}
-
-  	this.resetRisk(knownBoard);
+  	
   	const betterDecision = this.evaluateBoard(knownBoard);
-  	console.log("Melhor jogada calculada:", betterDecision);
+  	this.updateBombs(knownBoard, realArray);
+  	
+);
+this.resetRisk(knownBoard);
   	return betterDecision;
   },
   resetRisk(knownBoard){
-  	for(let i = 0; i < knownBoard.length; i++){
-  		knownBoard[i].risk = 0;
-  	}
-  }
+    for(let i = 0; i < knownBoard.length; i++){
+        knownBoard[i].risk = 999;
+        knownBoard[i].isSafe = false;
+        knownBoard[i].isBomb = false;
+    }
+}
 };
 
 const tilesManager = {
@@ -261,6 +342,20 @@ const tilesManager = {
     }
     this.renderTile(array, index);
     await helperFunctions.applyTempClass(array[index].element, "tiles--flagPop");
+},
+async markTile(array, index) {
+    if (array[index].isRevealed) return;
+    if (array[index].isMarked) return;
+
+    array[index].isMarked = true;
+
+    eventBus.update("tileMarked");
+
+    this.renderTile(array, index);
+    await helperFunctions.applyTempClass(
+        array[index].element,
+        "tiles--flagPop"
+    );
 },
   revealAllBombs() {
     this.tilesArray.forEach(async tile => {
@@ -453,6 +548,7 @@ getAdjacentTiles(board, center, size) {
 
     for (let rowOffset = -1; rowOffset <= 1; rowOffset++) {
         for (let colOffset = -1; colOffset <= 1; colOffset++) {
+        	if (rowOffset === 0 && colOffset === 0) continue;
             const newRow = row + rowOffset;
             const newCol = col + colOffset;
 
