@@ -140,7 +140,6 @@ const decisionEngine = {
 },
   scoreAdjacentTiles(knownBoard, center, size) {
   	const adjacentTiles = helperFunctions.getAdjacentTiles(knownBoard, center, size);
-  	
   	let unknownCount = 0;
   	for(let i = 0; i < adjacentTiles.length; i++){
   		const index = adjacentTiles[i].index;
@@ -255,7 +254,8 @@ updateBombs(knownBoard, realBoard) {
   	const betterDecision = this.evaluateBoard(knownBoard);
   	this.updateBombs(knownBoard, realArray);
   	
-);
+  	
+  
 this.resetRisk(knownBoard);
   	return betterDecision;
   },
