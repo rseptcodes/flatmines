@@ -15,7 +15,7 @@
 
     --red-color: #f43f5e;
     --blue-color: #0ea5e9;
-    --draw-color: #fbbf24;
+    --yellow-color: #fbbf24;
 
     --board-bg: #ffffff;
 
@@ -86,8 +86,8 @@ h1 {
     border-radius: 12px;
     padding: 12px 10px;
     position: relative;
-    font-size: 0.85rem;
-    font-weight: 600;
+    font-size: 0.95rem;
+    font-weight: 500;
     color: var(--txt-color);
     transition: background-color 0.5s;
 }
@@ -98,7 +98,7 @@ h1 {
 }
 
 .placar--timer::after,
-.placar--marked::after {
+.placar--marked::after, .placar--streak::after{
 	content: "";
 	position: absolute;
 	inset: 0;
@@ -121,6 +121,11 @@ h1 {
 .placar--marked::after {
 	animation: pulse .64s linear;
 	background-color: var(--red-color);
+}
+
+.placar--streak::after {
+	animation: pulse .64s linear;
+	background-color: var(--yellow-color);
 }
 
 @keyframes pulse {
@@ -310,4 +315,20 @@ h1 {
 .tiles--open[data-value="2"] { background-color: var(--num-2); }
 .tiles--open[data-value="3"] { background-color: var(--num-3); }
 .tiles--open[data-value="4"] { background-color: var(--num-4); }
-.tiles--open[data-value="high"] { background-color: var(--num-5);
+.tiles--open[data-value="high"] { background-color: var(--num-5-plus);}
+
+.testButton {
+	all: unset;
+	position: fixed;
+	margin: 0 auto;
+	bottom: 10px;
+	border-radius: 6px;
+	box-shadow: var(--shadow-sm);
+	width: fit-content;
+	padding: 8px;
+	color: var(--txt-color);
+	background-color: var(--red-color);
+}
+.tiles--open.tiles--aiLastMove {
+    background-color: var(--yellow-color);
+}
