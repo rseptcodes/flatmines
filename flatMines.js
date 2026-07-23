@@ -79,6 +79,17 @@ const eventBus = {
 //tileRevealed, isBomb, gameOver
 	},
 };
+const difficultyManager = {
+    DIFFICULTY_values: {
+		DIFF_HD: 0.20,
+		DIFF_MD: 0.15,
+		DIFF_EZ: 0.10,
+	},
+  currentDifficulty: null,
+	setDifficulty(){
+		this.currentDifficulty = this.DIFFICULTY_values.DIFF_EZ;
+	}
+};
 const boardState = {
 	board: [],
 	size: 0,
@@ -89,7 +100,7 @@ const boardState = {
 		this.board = Array(this.totalTiles).fill(0);
 		
 		let bombsPlaced = 0;
-		let bombsCount = Math.floor(this.totalTiles * 0.10);
+		let bombsCount = Math.floor(this.totalTiles * difficultyManager.DIFFICULTY_values.DIFF_EZ);
 		
 		while (bombsPlaced < bombsCount) {
     const randomIndex = Math.floor(Math.random() * this.totalTiles);
@@ -129,36 +140,57 @@ const boardState = {
 const decisionEngine = {
   knownTiles: [],
   size: 0,
+  totalBombs: null,
+  baseRisk: 1,
   init(board) {
+    const totalTiles = board.length;
+    this.size = Math.sqrt(totalTiles);
+    
+    this.totalBombs = boardState.totalBombs || Math.floor(totalTiles * (difficultyManager?.DIFFICULTY_values?.DIFF_EZ || 0.10));
+    
+    this.baseRisk = this.totalBombs / totalTiles;
+
     this.knownTiles = board.map(() => ({
         value: 999,
-        risk: 1,
+        risk: this.baseRisk,
         isSafe: false,
         isBomb: false
     }));
-    this.size = Math.sqrt(this.knownTiles.length);
 },
   scoreAdjacentTiles(knownBoard, center, size) {
-  	const adjacentTiles = helperFunctions.getAdjacentTiles(knownBoard, center, size);
-  	let unknownCount = 0;
-  	for(let i = 0; i < adjacentTiles.length; i++){
-  		const index = adjacentTiles[i].index;
-  		if(knownBoard[index].value === 9) {
-  			unknownCount++;
-  		}
-  	}
-  	if (unknownCount === 0) return;
+    const adjacentTiles = helperFunctions.getAdjacentTiles(knownBoard, center, size);
+    
+    const adjacentMarkedTiles = adjacentTiles.filter(t => knownBoard[t.index].isMarked || knownBoard[t.index].isBomb);
+    
+    const adjacentUnknownTiles = adjacentTiles.filter(t => knownBoard[t.index].value === 9 && !knownBoard[t.index].isBomb && !knownBoard[t.index].isMarked);
 
-  	const riskToAdd = knownBoard[center].value / unknownCount;
+    const centerValue = knownBoard[center].value;
+    const bombsFound = adjacentMarkedTiles.length;
 
-  	for(let i = 0; i < adjacentTiles.length; i++){
-  		const index = adjacentTiles[i].index;
-  		if(knownBoard[index].value === 9) {
-  			knownBoard[index].risk -= riskToAdd;
-  			
-  		}
-  	}
-  },
+    if (centerValue === bombsFound) {
+        for (const tile of adjacentUnknownTiles) {
+            knownBoard[tile.index].risk = -Infinity;
+            knownBoard[tile.index].isSafe = true;
+        }
+    }
+
+    const remainingBombsNeeded = centerValue - bombsFound;
+    if (remainingBombsNeeded > 0 && remainingBombsNeeded === adjacentUnknownTiles.length) {
+        for (const tile of adjacentUnknownTiles) {
+            knownBoard[tile.index].risk = Infinity;
+            knownBoard[tile.index].isBomb = true;
+        }
+    }
+
+    if (adjacentUnknownTiles.length > 0 && remainingBombsNeeded > 0) {
+        const riskToAdd = remainingBombsNeeded / adjacentUnknownTiles.length;
+        for (const tile of adjacentUnknownTiles) {
+            if (!knownBoard[tile.index].isSafe && !knownBoard[tile.index].isBomb) {
+                knownBoard[tile.index].risk -= riskToAdd;
+            }
+        }
+    }
+},
   analyzeSubsetRule(knownBoard, size, centerTile, adjacentTile) {
     const centerNeighbors = helperFunctions.getAdjacentTiles(knownBoard, centerTile, size);
     const adjacentNeighbors = helperFunctions.getAdjacentTiles(knownBoard, adjacentTile, size);
@@ -205,18 +237,48 @@ const decisionEngine = {
 
     if (valueDifference === 0) {
         for (const tile of exclusive) {
-            knownBoard[tile.index].risk = 0;
+            knownBoard[tile.index].risk = -Infinity;
             knownBoard[tile.index].isSafe = true;
         }
     }
 },
-  evaluateBoard(knownBoard) {  
+    evaluateBoard(knownBoard) {  
+    let closedTiles = 0;
+    let identifiedBombs = 0;
+
+    for (let i = 0; i < knownBoard.length; i++) {
+        if (knownBoard[i].isBomb) identifiedBombs++;
+        else if (knownBoard[i].value === 9) closedTiles++;
+    }
+
+    const bombsLeft = boardState.totalBombs - identifiedBombs;
+
+    if (bombsLeft === 0 && closedTiles > 0) {
+        for (let i = 0; i < knownBoard.length; i++) {
+            if (knownBoard[i].value === 9 && !knownBoard[i].isBomb) {
+                knownBoard[i].isSafe = true;
+                knownBoard[i].risk = -Infinity;
+            }
+        }
+        return knownBoard.findIndex(tile => tile.isSafe); // Clica no primeiro seguro
+    }
+
+    if (bombsLeft === closedTiles && closedTiles > 0) {
+        for (let i = 0; i < knownBoard.length; i++) {
+            if (knownBoard[i].value === 9 && !knownBoard[i].isBomb) {
+                knownBoard[i].isBomb = true;
+                knownBoard[i].risk = Infinity;
+            }
+        }
+    }
+
     for (let centerI = 0; centerI < knownBoard.length; centerI++) {  
         if (knownBoard[centerI].value === 9) continue;  
 
         this.scoreAdjacentTiles(knownBoard, centerI, this.size);  
 
         for (const adjacent of helperFunctions.getAdjacentTiles(knownBoard, centerI, this.size)) {  
+        	if(knownBoard[adjacent.index].value === 9) continue;
             this.analyzeSubsetRule( knownBoard,                this.size,centerI,adjacent.index
             );
         }
@@ -249,6 +311,10 @@ updateBombs(knownBoard, realBoard) {
   	for (let i = 0; i < knownBoard.length; i++) {
   		const realTile = realArray[i];
   		knownBoard[i].value = realTile.isRevealed ? realTile.number : 9;
+  	if(realTile.isMarked){
+  		knownBoard[i].isBomb = true;
+  		knownBoard[i].risk = Infinity;
+  	}
   	}
   	
   	const betterDecision = this.evaluateBoard(knownBoard);
@@ -261,7 +327,7 @@ this.resetRisk(knownBoard);
   },
   resetRisk(knownBoard){
     for(let i = 0; i < knownBoard.length; i++){
-        knownBoard[i].risk = 999;
+        knownBoard[i].risk = this.baseRisk;
         knownBoard[i].isSafe = false;
         knownBoard[i].isBomb = false;
     }
@@ -296,7 +362,7 @@ const tilesManager = {
     this.renderTile(array, index);
 
     if (boardState.board[index] === 0){
-        const adjacentTiles = helperFunctions.getAdjacentTiles(boardState.board, index, this.size);
+        const adjacentTiles = helperFunctions.getAdjacentTiles(boardState.board, index, boardState.size);
 
         for(let i = 0; i < adjacentTiles.length; i++){
             this.revealTile(array, adjacentTiles[i].index);
@@ -331,18 +397,14 @@ const tilesManager = {
         tile.element.innerText = tile.number;
     }
 },
-  async toggleMarkedTile(array, index){
-    if (array[index].isRevealed) return;
-
-    array[index].isMarked = !array[index].isMarked;
-    if(array[index].isMarked){
-    	eventBus.update("tileMarked");
+  async toggleMarkedTile(array, index) {
+    if (array[index].isMarked) {
+        await this.unmarkTile(array, index);
     } else {
-    	eventBus.update("tileUnmarked");
+        await this.markTile(array, index);
     }
-    this.renderTile(array, index);
-    await helperFunctions.applyTempClass(array[index].element, "tiles--flagPop");
 },
+
 async markTile(array, index) {
     if (array[index].isRevealed) return;
     if (array[index].isMarked) return;
@@ -350,6 +412,21 @@ async markTile(array, index) {
     array[index].isMarked = true;
 
     eventBus.update("tileMarked");
+
+    this.renderTile(array, index);
+    await helperFunctions.applyTempClass(
+        array[index].element,
+        "tiles--flagPop"
+    );
+},
+
+async unmarkTile(array, index) {
+    if (array[index].isRevealed) return;
+    if (!array[index].isMarked) return;
+
+    array[index].isMarked = false;
+
+    eventBus.update("tileUnmarked");
 
     this.renderTile(array, index);
     await helperFunctions.applyTempClass(
@@ -430,8 +507,8 @@ const configMenu = {
 	
 }
 const flagCountManager = {
-    maxFlags: 20,
-    flagsCount: 20,
+    maxFlags: 30,
+    flagsCount: 30,
 
     useFlag() {
         if (this.flagsCount <= 0) return;
@@ -513,7 +590,6 @@ const timeManager = {
 };
 
 //fazer ia depois q joga na melhor posicao e outra q poe bomba em alguma posicao
-//deixar bem feito dps
 
 const helperFunctions = {
 	createElement(tipo, local, classe){
@@ -643,6 +719,43 @@ formatTime(totalSeconds) {
 
 };
 mainConfig.init();
+
+// Experimental features. I plan to refactor this someday.
+let aiInterval = null;
+let lastAiMoveIndex = null;
+
 helperFunctions.createTestButton(() => {
-	eventBus.update("aiMove");
+    if (aiInterval) {
+        clearInterval(aiInterval);
+        aiInterval = null;
+        return;
+    }
+
+    aiInterval = setInterval(() => {
+        if (mainConfig.gameEnded) {
+            clearInterval(aiInterval);
+            aiInterval = null;
+            return;
+        }
+
+        if (lastAiMoveIndex !== null && tilesManager.tilesArray[lastAiMoveIndex]) {
+            tilesManager.tilesArray[lastAiMoveIndex].element.classList.remove("tiles--aiLastMove");
+        }
+
+        let move = decisionEngine.makeDecision(decisionEngine.knownTiles, tilesManager.tilesArray);
+
+        if (move === -1 || move === undefined) {
+            clearInterval(aiInterval);
+            aiInterval = null;
+            return;
+        }
+
+        lastAiMoveIndex = move;
+        if (tilesManager.tilesArray[move]) {
+            tilesManager.tilesArray[move].element.classList.add("tiles--aiLastMove");
+        }
+
+        tilesManager.revealTile(tilesManager.tilesArray, move);
+
+    }, 50);
 });
