@@ -1,4 +1,4 @@
-/* TODO: Melhorar o design depois */
+/* TODO: improve the UI/UX */
 
 :root {
     --bg-color: #c9d0d8;
@@ -308,6 +308,106 @@ h1 {
 .footer button:active {
     transform: scale(0.95) translateY(0);
     box-shadow: var(--shadow-sm);
+}
+.footer .solverBtn--hidden {
+	display: none;
+	pointer-events: none;
+	opacity: 0;
+}
+
+.configMenu {
+    display: flex;
+    position: fixed;
+    z-index: 999;
+    top: 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 16px;
+    background-color: var(--sc-color);
+    border: 0.5px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow-lg);
+    width: 100%;
+    max-width: 320px;
+    margin: 16px auto;
+    
+    opacity: 1;
+    pointer-events: auto;
+    transition: 
+        opacity 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+        transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1),
+        visibility 0.3s ease;
+}
+
+.configMenu--hidden {
+    opacity: 0;
+    pointer-events: none;
+    visibility: hidden;
+}
+.difficultyButtons {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.difficultyButtons button {
+    flex: 1;
+    height: 42px;
+    background: color-mix(in srgb, var(--bg-color) 40%, var(--sc-color));
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    box-shadow: var(--shadow-sm);
+    color: var(--txt-color);
+    font-size: 1.1rem;
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.difficultyButtons button:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-sm);
+}
+
+.difficultyButtons button:active {
+    transform: scale(0.92) translateY(0);
+}
+/* TODO: Add a visual indicator for the selected button to improve the UX. */
+#solverManager {
+    width: 100%;
+    padding: 10px 14px;
+    background-color: color-mix(in srgb, var(--sc-color) 80%, transparent);
+    border: 0.5px solid var(--border);
+    border-radius: 8px;
+    box-shadow: var(--shadow-sm);
+    
+    color: var(--txt-color);
+    font-size: 0.85rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+#solverManager:hover {
+    background-color: var(--accent-color);
+    color: #ffffff;
+    border-color: var(--accent-hover);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+#solverManager:active {
+    transform: scale(0.96) translateY(0);
 }
 
 .tiles--open[data-value="0"] { background-color: var(--num-0); }
