@@ -8,6 +8,12 @@ A lightweight, fully interactive Minesweeper engine built from scratch with Vani
 
 This project is a functional engine for a classic Minesweeper game built entirely with Vanilla JavaScript. It serves as a practical exercise in architectural patterns (Pub/Sub), state management, recursive algorithms, DOM manipulation, and Artificial Intelligence implementation without relying on modern frameworks.
 
+## 🎬 Demo
+
+![AI Solver Demo](./assets/ai-solver-demo.gif)
+
+> The built-in AI analyzes the board, identifies safe moves, flags bombs, and solves the game using deterministic logic and probability analysis.
+
 ## ✨ Features
 
 * **Event-Driven Architecture:** A custom `EventBus` (Pub/Sub pattern) handles communication between game state, user input, and the UI, keeping the codebase decoupled and scalable.
