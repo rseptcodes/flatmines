@@ -2,6 +2,7 @@ const mainConfig = {
 	gameEnded: false,
 	init(){
 		eventBus.subscribe("init", () => {
+			difficultyManager.init();
 			boardState.createBoard(12);
       tilesManager.initTiles(boardState.board);
       decisionEngine.init(boardState.board);
@@ -9,6 +10,7 @@ const mainConfig = {
 			timeManager.start();
 			flagCountManager.resetCount();
 			streakManager.init();
+			configMenu.init();
 		});
 		eventBus.subscribe("timerInit", () => {
 			ui.toggleAnimate(ui.time, "placar--timer", true);
@@ -19,9 +21,15 @@ const mainConfig = {
 		eventBus.subscribe("newStreak", () => {
 			helperFunctions.applyTempClass(ui.streak, "placar--streak");
 		});
+		eventBus.subscribe("newDifficulty", () => {
+			eventBus.update("reset");
+		});
 		
 		eventBus.subscribe("hideNumbers", () => {
 			ui.toggleNumbersVisibility();
+		});
+		eventBus.subscribe("toggleConfigMenuVisibillity", () => {
+			configMenu.toggleVisibility();
 		});
 		eventBus.subscribe("aiMove", () => {
 			let move = decisionEngine.makeDecision(decisionEngine.knownTiles, tilesManager.tilesArray);
@@ -76,19 +84,8 @@ const eventBus = {
 		this.subs.forEach(n => {
     n.listening === listening && n.callback();
 });
-//tileRevealed, isBomb, gameOver
+
 	},
-};
-const difficultyManager = {
-    DIFFICULTY_values: {
-		DIFF_HD: 0.20,
-		DIFF_MD: 0.15,
-		DIFF_EZ: 0.10,
-	},
-  currentDifficulty: null,
-	setDifficulty(){
-		this.currentDifficulty = this.DIFFICULTY_values.DIFF_EZ;
-	}
 };
 const boardState = {
 	board: [],
@@ -100,7 +97,7 @@ const boardState = {
 		this.board = Array(this.totalTiles).fill(0);
 		
 		let bombsPlaced = 0;
-		let bombsCount = Math.floor(this.totalTiles * difficultyManager.DIFFICULTY_values.DIFF_EZ);
+		let bombsCount = Math.floor(this.totalTiles * difficultyManager.currentDifficulty);
 		
 		while (bombsPlaced < bombsCount) {
     const randomIndex = Math.floor(Math.random() * this.totalTiles);
@@ -146,7 +143,7 @@ const decisionEngine = {
     const totalTiles = board.length;
     this.size = Math.sqrt(totalTiles);
     
-    this.totalBombs = boardState.totalBombs || Math.floor(totalTiles * (difficultyManager?.DIFFICULTY_values?.DIFF_EZ || 0.10));
+    this.totalBombs = boardState.totalBombs || Math.floor(totalTiles * (difficultyManager.currentDifficulty || 0.10));
     
     this.baseRisk = this.totalBombs / totalTiles;
 
@@ -468,7 +465,9 @@ const ui = {
     flags: document.getElementById("score-flags"),
     streak: document.getElementById("score-streak"),
     resetBtn: document.getElementById("resetBtn"),
+    configBtn: document.getElementById("configBtn"),
     tilesConfigBtn: document.getElementById("tilesDesignBtn"),
+    solverBtn: document.getElementById("solverBtn"),
     
     board: document.getElementById("board"),
 
@@ -486,6 +485,8 @@ const ui = {
     initListeners(){
     this.setListener(this.resetBtn, "reset")
     this.setListener(this.tilesConfigBtn, "hideNumbers")
+    this.setListener(this.configBtn, "toggleConfigMenuVisibillity");
+    this.setListener(this.solverBtn, "aiMove");
     },
     setListener(element, update){
     element.addEventListener("click", () => {
@@ -498,14 +499,94 @@ const ui = {
     } else {
     	element.classList.remove(className);
     }
-},
+},  
+    toggleSolverBtnVisibility(hide){
+    	if(hide) {
+    		this.solverBtn.classList.add("solverBtn--hidden");
+    	} else {
+    		this.solverBtn.classList.remove("solverBtn--hidden");
+    	}
+    },
     toggleNumbersVisibility(){
     	this.board.classList.toggle("board--withoutNumbers");
     }
 };
 const configMenu = {
-	
-}
+	configMenu: document.getElementById("configMenu"),
+	easyButton: document.getElementById("easyButton"),
+	mediumButton: document.getElementById("mediumButton"),
+	hardButton: document.getElementById("hardButton"),
+	solverManager: document.getElementById("solverManager"),
+	configMenuIsHidden: true,
+	solverButtonIsHidden: true,
+
+	init() {
+		this.setDifficultyButtonListener(this.easyButton, "easy");
+		this.setDifficultyButtonListener(this.mediumButton, "medium");
+		this.setDifficultyButtonListener(this.hardButton, "hard");
+		this.solverManager.addEventListener("click", () =>{
+			this.toggleSolver();
+		});
+	},
+
+	toggleVisibility() {
+		this.configMenuIsHidden = !this.configMenuIsHidden;
+
+		if (this.configMenuIsHidden) {
+			this.configMenu.classList.add("configMenu--hidden");
+		} else {
+			this.configMenu.classList.remove("configMenu--hidden");
+		}
+	},
+
+	setDifficultyButtonListener(element, difficulty) {
+		if (!element) return;
+
+		element.addEventListener("click", () => {
+			difficultyManager.setDifficulty(difficulty);
+		});
+	},
+
+	toggleSolver() {
+		this.solverButtonIsHidden = !this.solverButtonIsHidden;
+		ui.toggleSolverBtnVisibility(this.solverButtonIsHidden);
+	},
+
+	getSolverDebugInfo() {
+  		// I'll make a little text box on the corner of screen for show the solver "thinking"
+	},
+};
+const difficultyManager = {
+    DIFFICULTY_values: {
+        DIFF_HD: 0.19,
+        DIFF_MD: 0.15,
+        DIFF_EZ: 0.11,
+    },
+    currentDifficulty: null,
+    init() {
+        this.currentDifficulty = this.DIFFICULTY_values.DIFF_MD;
+    },
+	setDifficulty(newValue) {
+	switch (newValue) {
+		case "easy":
+			this.currentDifficulty = this.DIFFICULTY_values.DIFF_EZ;
+			break;
+
+		case "medium":
+			this.currentDifficulty = this.DIFFICULTY_values.DIFF_MD;
+			break;
+
+		case "hard":
+			this.currentDifficulty = this.DIFFICULTY_values.DIFF_HD;
+			break;
+
+		default:
+			return;
+	}
+
+	eventBus.update("newDifficulty");
+},
+};
 const flagCountManager = {
     maxFlags: 30,
     flagsCount: 30,
@@ -588,8 +669,6 @@ const timeManager = {
         ui.setTime(0);
     }
 };
-
-//fazer ia depois q joga na melhor posicao e outra q poe bomba em alguma posicao
 
 const helperFunctions = {
 	createElement(tipo, local, classe){
@@ -715,12 +794,13 @@ formatTime(totalSeconds) {
 
   return `${m}:${s}`;
 },
-
-
 };
 mainConfig.init();
 
-// Experimental features. I plan to refactor this someday.
+const autoSolver = {
+	//I'll refactor the aiInterval and put here
+}
+// testAREA !!!!!!, I'll refactor this
 let aiInterval = null;
 let lastAiMoveIndex = null;
 
