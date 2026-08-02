@@ -84,7 +84,7 @@ const eventBus = {
 		this.subs.forEach(n => {
     n.listening === listening && n.callback();
 });
-
+//tileRevealed, isBomb, gameOver
 	},
 };
 const boardState = {
@@ -500,13 +500,16 @@ const ui = {
     	element.classList.remove(className);
     }
 },  
-    toggleSolverBtnVisibility(hide){
-    	if(hide) {
-    		this.solverBtn.classList.add("solverBtn--hidden");
-    	} else {
-    		this.solverBtn.classList.remove("solverBtn--hidden");
-    	}
-    },
+    toggleSolverBtnVisibility(hide) {
+    if (hide) {
+        helperFunctions.applyTempClass(this.solverBtn, "solverBtn--fadeOut", () => {
+            this.solverBtn.classList.add("solverBtn--hidden");
+        });
+    } else {
+        this.solverBtn.classList.remove("solverBtn--hidden");
+        helperFunctions.applyTempClass(this.solverBtn, "solverBtn--fadeIn");
+    }
+},
     toggleNumbersVisibility(){
     	this.board.classList.toggle("board--withoutNumbers");
     }
@@ -536,6 +539,9 @@ const configMenu = {
 			this.configMenu.classList.add("configMenu--hidden");
 		} else {
 			this.configMenu.classList.remove("configMenu--hidden");
+			helperFunctions.setOverlay(() => {
+				configMenu.toggleVisibility();
+			})
 		}
 	},
 
@@ -553,7 +559,7 @@ const configMenu = {
 	},
 
 	getSolverDebugInfo() {
-  		// I'll make a little text box on the corner of screen for show the solver "thinking"
+  		// I'll made a little text box on the corner of screen for show the solver "thinking"
 	},
 };
 const difficultyManager = {
@@ -779,6 +785,32 @@ setupMobileInput(element, callback, longCallback) {
         clearTimeout(pressTimeout);
     });
 },
+overlayManager: {
+	overlayElement: null,
+	createOverlay(callback){
+  if(this.overlayElement) return;
+  this.overlayElement = helperFunctions.createElement("div", document.body, "overlay")
+	this.overlayElement.addEventListener("click", () => {
+		try {
+		callback?.();
+		} finally {
+		this.overlayElement?.remove();
+		this.overlayElement = null;
+		}
+	});
+},
+},
+setOverlay(callback){
+	this.overlayManager.createOverlay(callback);
+},
+showInfoText(text){
+  text = String(text);
+	const textBox = this.createElement("div", document.body, "infoText");
+	textBox.textContent = text;
+	this.applyTempClass(textBox, "show", () => {
+    textBox.remove();
+});
+},
 formatTime(totalSeconds) {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
@@ -800,7 +832,7 @@ mainConfig.init();
 const autoSolver = {
 	//I'll refactor the aiInterval and put here
 }
-// testAREA !!!!!!, I'll refactor this
+// testAREA !!!!!!, I'will refactor this
 let aiInterval = null;
 let lastAiMoveIndex = null;
 
