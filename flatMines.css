@@ -1,17 +1,17 @@
-/* TODO: improve the UI/UX */
+/* TODO: Melhorar o design depois */
 
 :root {
-    --bg-color: #c9d0d8;
+    --bg-color: #e1e3e6;
 
-    --sc-color: #d9dde3;
+    --sc-color: #eeeff0;
     --sc-color-hover: #e9ebefff;
-    --border: rgba(173,186,199,0.594);
+    --border: rgba(213,220,227,0.594);
 
     --txt-color: #000000;
     --txt-muted: #7a7a8c;
 
-    --accent-color: #8199ca;
-    --accent-hover: #c7d1e6;
+    --accent-color: #8bc4fb;
+    --accent-hover: #cce4fbff;
 
     --red-color: #f43f5e;
     --blue-color: #0ea5e9;
@@ -38,11 +38,10 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Orbitron', sans-serif;
 }
 
 body {
-    background-color: var(--bg-color);
+    background: linear-gradient(to top,var(--bg-color), var(--sc-color) );
     color: var(--txt-color);
     display: flex;
     justify-content: center;
@@ -57,6 +56,7 @@ body {
     width: min(92vw, 520px);
     text-align: center;
     padding: 20px;
+    font-family: 'Orbitron', sans-serif;
 }
 
 h1 {
@@ -67,6 +67,7 @@ h1 {
 
 .subtitle {
     color: var(--txt-muted);
+    font-family: "Poppins", sans-serif;
     font-size: 0.9rem;
     margin-bottom: 24px;
 }
@@ -83,6 +84,7 @@ h1 {
     background-color: var(--sc-color);
     border: 0.5px solid var(--border);
     box-shadow: var(--shadow-sm);
+    font-family: "Poppins", sans-serif;
     border-radius: 12px;
     padding: 12px 10px;
     position: relative;
@@ -179,6 +181,7 @@ h1 {
     border: 0.5px solid var(--border);
     cursor: pointer;
     font-size: calc(var(--tile-size) * 0.55);
+    font-family: 'Orbitron', sans-serif;
     font-weight: 600;
     color: transparent;
     -webkit-tap-highlight-color: transparent;
@@ -285,34 +288,56 @@ h1 {
     aspect-ratio: 1;
     background: color-mix(in srgb, var(--sc-color) 70%, transparent);
     border: 0.5px solid var(--border);
-    border-radius: 8px;
+    border-radius: 16px;
     box-shadow: var(--shadow-sm);
-    
+
     color: var(--txt-color);
     font-size: 0.95rem;
     font-weight: 600;
     letter-spacing: 0.5px;
-    
+
     cursor: pointer;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    visibility: visible;
+
+    transition:
+        opacity .25s ease,
+        transform .25s ease,
+        max-width .25s ease,
+        visibility .25s;
 }
+button.solverBtn--hidden {
+    display: none;
+}
+
+button.solverBtn--fadeOut {
+    opacity: 0;
+    transform: translateY(8px);
+    max-width: 0;
+    
+    visibility: hidden;
+    pointer-events: none;
+    animation: fadeOut .25s forwards;
+}
+
+button.solverBtn--fadeIn {
+    animation: fadeIn .25s forwards;
+}
+
 .footer button:hover {
     background-color: var(--accent-color);
     color: #ffffff;
-    transform: translateY(-2px);
+    transform: scale(1.05);
     border-color: var(--accent-hover);
 }
 
 .footer button:active {
     transform: scale(0.95) translateY(0);
     box-shadow: var(--shadow-sm);
-}
-.footer .solverBtn--hidden {
-	display: none;
-	pointer-events: none;
-	opacity: 0;
 }
 
 .configMenu {
@@ -355,9 +380,9 @@ h1 {
 .difficultyButtons button {
     flex: 1;
     height: 42px;
-    background: color-mix(in srgb, var(--bg-color) 40%, var(--sc-color));
+    background-color: var(--sc-color);
     border: 0.5px solid var(--border);
-    border-radius: 8px;
+    border-radius: 16px;
     box-shadow: var(--shadow-sm);
     color: var(--txt-color);
     font-size: 1.1rem;
@@ -372,6 +397,7 @@ h1 {
 
 .difficultyButtons button:hover {
     transform: translateY(-2px);
+    background-color: var(--accent-color);
     box-shadow: var(--shadow-sm);
 }
 
@@ -422,7 +448,7 @@ h1 {
 	position: fixed;
 	margin: 0 auto;
 	bottom: 10px;
-	border-radius: 6px;
+	border-radius: 16px;
 	box-shadow: var(--shadow-sm);
 	width: fit-content;
 	padding: 8px;
@@ -431,4 +457,85 @@ h1 {
 }
 .tiles--open.tiles--aiLastMove {
     background-color: var(--yellow-color);
+}
+.overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 998;
+
+    background: rgba(0, 0, 0, .4);
+    backdrop-filter: blur(1px);
+    transition: opacity .7s ease-in-out;
+}
+.infoText {
+    position: fixed;
+    left: 50%;
+    bottom: 24px;
+    transform: translateX(-50%);
+    font-family: "Poppins", sans-serif;
+
+    padding: 10px 16px;
+    border-radius: 12px;
+
+    background: rgba(28, 28, 30, 0.92);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-align: center;
+
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(12px);
+
+    pointer-events: none;
+    user-select: none;
+
+    transition: opacity .25s ease, transform .25s ease;
+}
+.infoText.show {
+    animation: infoTextShow 3s forwards;
+}
+
+@keyframes infoTextShow {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, 10px);
+    }
+
+    10% {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+
+    90% {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(-50%, 10px);
+    }
+}
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateY(8px);
+    }
 }
