@@ -544,3 +544,49 @@ button.solverBtn--fadeIn {
         transform: translateY(8px);
     }
 }
+
+.tooltip {
+  position: relative;
+}
+
+.tooltip::after {
+  content: attr(data-tooltip);
+
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 50%;
+  transform: translateX(-50%);
+
+  padding: 6px 10px;
+  border-radius: 6px;
+  background-color: var(--bomb);
+  color: var(--bg-color);
+  font-size: 12px;
+  white-space: nowrap;
+
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+
+  transition:
+    opacity .15s ease, visibility .15s ease;
+  transition-delay: .5s;
+}
+
+.tooltip:hover::after {
+  opacity: 1;
+  visibility: visible;
+}
+.tooltip::after {
+  transition: opacity .15s;
+}
+
+.tooltip:hover::after {
+  transition-delay: .5s;
+  opacity: 1;
+}
+
+.tooltip:not(:hover)::after {
+  transition-delay: 0s;
+  opacity: 0;
+}
