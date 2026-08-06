@@ -355,7 +355,9 @@ button.solverBtn--fadeIn {
     box-shadow: var(--shadow-lg);
     width: 100%;
     max-width: 320px;
-    margin: 16px auto;
+    margin-top: 16px;
+	left: 50%;
+	transform: translateX(-50%);
     
     opacity: 1;
     pointer-events: auto;
@@ -454,6 +456,9 @@ button.solverBtn--fadeIn {
 	padding: 8px;
 	color: var(--txt-color);
 	background-color: var(--red-color);
+}
+.testButton:hover{
+	background: color-mix(in srgb , var(--red-color), var(--accent-hover) 50%)
 }
 .tiles--open.tiles--aiLastMove {
     background-color: var(--yellow-color);
