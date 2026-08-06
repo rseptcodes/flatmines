@@ -17,7 +17,7 @@
 </head>
 <body>
 <div class="container">
-    <h1>flatMines</h1>
+    <h1>FlatMines</h1>
     <p class="subtitle">Good luck.</p>
 
 <div class="placar">
@@ -27,22 +27,43 @@
 </div>
 
     <div id="board" class="board"></div>
-    <div class ="footer">
-    <button id="resetBtn"><span class= "fa-solid fa-arrows-rotate"></span></button>
-    <button id="tilesDesignBtn"> <i class="fa-solid fa-4"></i> </button>
-    <button id="configBtn"> <i class="fa-solid fa-gear"></i> </button>
-    
-    <button class="solverBtn--hidden" id="solverBtn"> <i class="fa-solid fa-brain"></i></button>
-    
-    </div>
-    <div id="configMenu" class = "configMenu configMenu--hidden">
-    	
+<div class="footer">
+    <button id="resetBtn" class="tooltip" data-tooltip="Reset">
+        <span class="fa-solid fa-arrows-rotate"></span>
+    </button>
+
+    <button id="tilesDesignBtn" class="tooltip" data-tooltip="Tile Design">
+        <i class="fa-solid fa-4"></i>
+    </button>
+
+    <button id="configBtn" class="tooltip" data-tooltip="Settings">
+        <i class="fa-solid fa-gear"></i>
+    </button>
+
+    <button class="solverBtn--hidden tooltip" id="solverBtn" data-tooltip="Auto Solver">
+        <i class="fa-solid fa-brain"></i>
+    </button>
+</div>
+
+<div id="configMenu" class="configMenu configMenu--hidden">
     <div class="difficultyButtons">
-		<button id="easyButton"><i class="fa-solid fa-seedling"></i></button>
-		<button id="mediumButton"><i class="fa-solid fa-fire"></i></button>
-		<button id="hardButton"><i class="fa-solid fa-skull"></i></button>
-		</div>
-		<button id="solverManager">Enable AI solver</button>
+        <button id="easyButton" class="tooltip" data-tooltip="Easy">
+            <i class="fa-solid fa-seedling"></i>
+        </button>
+
+        <button id="mediumButton" class="tooltip" data-tooltip="Medium">
+            <i class="fa-solid fa-fire"></i>
+        </button>
+
+        <button id="hardButton" class="tooltip" data-tooltip="Hard">
+            <i class="fa-solid fa-skull"></i>
+        </button>
+    </div>
+
+    <button id="solverManager" class="tooltip" data-tooltip="Toggle AI Solver">
+        Enable AI solver
+    </button>
+</div>
     </div>
     </div>
 </body>
