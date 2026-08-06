@@ -696,8 +696,12 @@ createIcon(local, FAName){
 		icon.classList.add("fa");
 		return icon;
 },
-createTestButton(callback){
+createTestButton(callback, dataTooltip ){
 	const button = this.createButton(document.body, "testButton", "fa-hammer");
+	if(dataTooltip){
+		button.classList.add("tooltip")
+	 button.dataset.tooltip = dataTooltip;
+	}
 	if(callback) button.addEventListener("click", () => {
 		callback();
 	})
@@ -870,4 +874,4 @@ helperFunctions.createTestButton(() => {
         tilesManager.revealTile(tilesManager.tilesArray, move);
 
     }, 50);
-});
+}, "InitAutoSolver");
