@@ -457,6 +457,9 @@ button.solverBtn--fadeIn {
 	color: var(--txt-color);
 	background-color: var(--red-color);
 }
+.testButton.tooltip {
+	position: fixed;
+}
 .testButton:hover{
 	background: color-mix(in srgb , var(--red-color), var(--accent-hover) 50%)
 }
