@@ -157,8 +157,9 @@ h1 {
     --board-size: 5;
     display: grid;
     grid-template-columns: repeat(var(--board-size), 1fr);
-    width: fit-content;
     padding: 12px;
+	  position: relative;
+    z-index: 2; 
     background-color: var(--sc-color);
     border: 0.5px solid var(--border);
     border-radius: 6px;
@@ -167,10 +168,53 @@ h1 {
 .board--withoutNumbers .tiles:not(.tiles--hasFlag):not(.tiles--bomb){
 	color: transparent;
 }
+.boardsContainer {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+	gap: 1dvh;
+}
 .board::after {
 	content: "";
 	/* dps faco isso */
 }
+.board--previewCopy--entry {
+    visibility: visible;
+    opacity: 1;
+    z-index: 3;
+    animation: swipeOutLeft 1s cubic-bezier(0.25, 1, 0.35, 1) forwards;
+}
+.board--nextCopy--entry {
+    visibility: visible;
+    opacity: 1;
+    z-index: 1;
+    animation: swipeInRight 1s cubic-bezier(0.25, 1, 0.35, 1) forwards;
+}
+@keyframes swipeOutLeft {
+    0% {
+        transform: translateX(100px) scale(0.8);
+			  filter: grayscale(100%);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0) scale(1);
+        filter: none;
+			opacity: 1;
+    }
+}
+
+@keyframes swipeInRight {
+    0% {
+        transform: translateX(-100px) scale(0.8);
+        opacity: 0;
+    }
+    100% {
+        transform: translateX(0) scale(1);
+        opacity: 1;
+    }
+}
+
 .tiles {
     width: var(--tile-size);
     height: var(--tile-size);
