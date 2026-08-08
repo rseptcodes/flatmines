@@ -3,6 +3,9 @@ const mainConfig = {
 	init(){
 		eventBus.subscribe("init", () => {
 			difficultyManager.init();
+			uiBoardCopies.init();
+			// I'll remove these magic numbers in a future refactor
+			uiBoardCopies.recreateBoardClones(ui.board, 12);
 			boardState.createBoard(12);
       tilesManager.initTiles(boardState.board);
       decisionEngine.init(boardState.board);
@@ -43,8 +46,9 @@ const mainConfig = {
 		    flagCountManager.useFlag();
 		    helperFunctions.applyTempClass(ui.flags, "placar--marked");
 		});
-		eventBus.subscribe("reset", () => {
+		eventBus.subscribe("reset", async() => {
 			this.gameEnded = false;
+ await uiBoardCopies.recreateBoardClones(ui.board, 12);
 			boardState.resetBoard(12);
       tilesManager.resetTiles(boardState.board);
       timeManager.reset();
@@ -468,7 +472,8 @@ const ui = {
     configBtn: document.getElementById("configBtn"),
     tilesConfigBtn: document.getElementById("tilesDesignBtn"),
     solverBtn: document.getElementById("solverBtn"),
-    
+
+	  boardsContainer : document.getElementById("boardsContainer"),
     board: document.getElementById("board"),
 
     setTime(value) {
@@ -562,6 +567,103 @@ const configMenu = {
   		// I'll made a little text box on the corner of screen for show the solver "thinking"
 	},
 };
+const uiBoardCopies = {
+    lastBoard: null,
+    emptyBoard: null,
+    isMobile: null,
+
+    init() {
+    this.isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+    this.lastBoard = document.getElementById("lastBoard");
+    this.emptyBoard = document.getElementById("nextBoard");
+
+    if (this.lastBoard) {
+        this.lastBoard.style.visibility = this.isMobile
+            ? "hidden"
+            : "visible";
+    }
+
+    if (this.emptyBoard) {
+        this.emptyBoard.style.visibility = this.isMobile
+            ? "hidden"
+            : "visible";
+    }
+
+    window.addEventListener("resize", () => {
+        this.isMobile = window.matchMedia("(max-width: 768px)").matches;
+
+        if (this.lastBoard) {
+            this.lastBoard.style.visibility = this.isMobile
+                ? "hidden"
+                : "visible";
+        }
+
+        if (this.emptyBoard) {
+            this.emptyBoard.style.visibility = this.isMobile
+                ? "hidden"
+                : "visible";
+        }
+    });
+},
+async createBoardClones(boardElement, boardSize) {
+    if (!boardElement) return;
+	 if(this.isMobile) {
+		 this.lastBoard.style.visibility = this.isMobile ? "hidden" : "visible";
+this.emptyBoard.style.visibility = this.isMobile ? "hidden" : "visible";
+		 return;
+	 }
+
+    await this.removeBoardClones();
+
+    if (this.lastBoard) {
+        this.lastBoard.classList.remove("board--previewCopy--out");
+    }
+
+    if (this.emptyBoard) {
+        this.emptyBoard.classList.remove("board--nextCopy--out");
+    }
+
+    if (this.lastBoard) {
+        this.lastBoard.innerHTML = boardElement.innerHTML;
+        this.lastBoard.style.setProperty("--board-size", boardSize);
+
+        helperFunctions.applyTempClass(
+            this.lastBoard,
+            "board--previewCopy--entry"
+        );
+    }
+
+    if (this.emptyBoard) {
+        this.emptyBoard.innerHTML = boardElement.innerHTML;
+        this.emptyBoard.style.setProperty("--board-size", boardSize);
+
+        this.emptyBoard.querySelectorAll(".tiles").forEach(tile => {
+            tile.innerText = "";
+            tile.className = "tiles";
+        });
+
+        helperFunctions.applyTempClass(
+            this.emptyBoard,
+            "board--nextCopy--entry"
+        );
+    }
+},
+async recreateBoardClones(boardElement, boardSize) {
+    await this.createBoardClones(boardElement, boardSize);
+},
+    removeBoardClones() {
+        if (this.lastBoard) {
+                this.lastBoard.innerHTML = ''; 
+        }
+        
+        if (this.emptyBoard) {
+                this.emptyBoard.innerHTML = '';
+        }
+    },
+};
+
+
 const difficultyManager = {
     DIFFICULTY_values: {
         DIFF_HD: 0.19,
