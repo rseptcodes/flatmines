@@ -2,9 +2,9 @@
 
 A lightweight, fully interactive Minesweeper engine built from scratch with Vanilla JS, an optimized 1D flat array architecture, and a custom EventBus for state management.
 
-![HTML5](https://img.shields.io/badge/html5-%23E34F26.svg?style=for-the-badge&logo=html5&logoColor=white)
 ![CSS3](https://img.shields.io/badge/css3-%231572B6.svg?style=for-the-badge&logo=css3&logoColor=white)
 ![JavaScript](https://img.shields.io/badge/javascript-%23323330.svg?style=for-the-badge&logo=javascript&logoColor=%23F7DF1E)
+![Algorithms](https://img.shields.io/badge/Algorithms-FF6F00.svg?style=for-the-badge&logo=thealgorithms&logoColor=white)
 
 This project is a functional engine for a classic Minesweeper game built entirely with Vanilla JavaScript. It serves as a practical exercise in architectural patterns (Pub/Sub), state management, recursive algorithms, DOM manipulation, and Artificial Intelligence implementation without relying on modern frameworks.
 
@@ -36,6 +36,6 @@ This project is a functional engine for a classic Minesweeper game built entirel
 ## 🚀 Future Improvements
 
 * **File Separation (ES6 Modules):** Break down the single JavaScript configuration into smaller, cohesive modules (`board.js`, `ui.js`, `events.js`, `ai.js`) for better code maintainability.
-* **Difficulty Levels & Config Menu:** Expand the currently empty `configMenu` to allow users to choose different grid sizes and bomb ratios (e.g., Easy, Medium, Hard).
+* **Enhanced Difficulty System:** Allow users to choose between different grid sizes and bomb densities (Easy, Medium, and Hard).
 * **Mobile Touch Support Optimization:** Fully implement and polish the `setupMobileInput` functionality to ensure a seamless experience on touch devices (long-press for flags, tap for reveal).
 * **Enhanced Auto-Solver:** Improve the auto-solver logic to be more precise on higher difficulty levels.
