@@ -35,7 +35,5 @@ This project is a functional engine for a classic Minesweeper game built entirel
 
 ## 🚀 Future Improvements
 
-* **File Separation (ES6 Modules):** Break down the single JavaScript configuration into smaller, cohesive modules (`board.js`, `ui.js`, `events.js`, `ai.js`) for better code maintainability.
-* **Enhanced Difficulty System:** Allow users to choose between different grid sizes and bomb densities (Easy, Medium, and Hard).
 * **Mobile Touch Support Optimization:** Fully implement and polish the `setupMobileInput` functionality to ensure a seamless experience on touch devices (long-press for flags, tap for reveal).
 * **Enhanced Auto-Solver:** Improve the auto-solver logic to be more precise on higher difficulty levels.
